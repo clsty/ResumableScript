@@ -1,29 +1,31 @@
 #!/usr/bin/env bash
 function v() {
-  echo -e "\e[34m[$0]: Next command to be executed:\e[0m"
+  echo -e "\e[34m[$0]: Next command:\e[0m"
   echo -e "\e[32m$@\e[0m"
   execute=true
-  cmdstatus=0 # 0=normal; 1=failed; 2=failed but ignored; 3=skipped
   if $ask;then
     while true;do
-      echo -e "\e[34mExecute the command shown above? \e[0m"
+      echo -e "\e[34mExecute the command above? \e[0m"
       echo "  y = Yes"
       echo "  e = Exit now"
       echo "  s = Skip this command (may DISRUPT the normal flow of the script!)"
-      echo "  yesforall = yes and don't ask again (only when you really sure)"
+      echo "  yesforall = Yes and don't ask again (only when you really sure)"
       read -p "Enter here [y/e/s/yesforall]: " p
       case $p in
         [yY]) echo -e "\e[34m[$0]: OK, executing...\e[0m" ;break ;;
         [eE]) echo -e "\e[34m[$0]: Exiting...\e[0m" ;exit ;break ;;
-        [sS]) echo -e "\e[34m[$0]: Alright, skipping this one...\e[0m" ;execute=false;cmdstatus=3 ;break ;;
+        [sS]) echo -e "\e[34m[$0]: Alright, skipping this one...\e[0m" ;execute=false;break ;;
         "yesforall") echo -e "\e[34m[$0]: Alright, won't ask again. Executing...\e[0m";ask=false ;break ;;
         *) echo -e "\e[31mPlease enter one of [y/e/s/yesforall].\e[0m";;
       esac
     done
   fi
-  if $execute;then
-    "$@" || cmdstatus=1
+  if $execute;then x "$@";else
+    echo -e "\e[33m[$0]: Command \"\e[32m$@\e[33m\" has been skipped by user.\e[0m"
   fi
+}
+# When use v() for a defined function, use x() INSIDE its definition to catch errors.
+function x() {
   while [ $cmdstatus == 1 ] ;do
     echo -e "\e[31m[$0]: Command \"\e[32m$@\e[31m\" has failed."
     echo -e "You may need to resolve the problem manually BEFORE repeating this command.\e[0m"
@@ -35,7 +37,7 @@ function v() {
       [iI]) echo -e "\e[34m[$0]: Alright, ignore and continue...\e[0m";cmdstatus=2;;
       [eE]) echo -e "\e[34m[$0]: Alright, will exit.\e[0m";break;;
       *) echo -e "\e[34m[$0]: OK, repeating...\e[0m"
-         "$@" && cmdstatus=0
+         if "$@";then cmdstatus=0;else cmdstatus=1;fi
          ;;
     esac
   done
@@ -43,8 +45,13 @@ function v() {
     0) echo -e "\e[34m[$0]: Command \"\e[32m$@\e[34m\" finished.\e[0m";;
     1) echo -e "\e[31m[$0]: Command \"\e[32m$@\e[31m\" has failed. Exiting...\e[0m";exit 1;;
     2) echo -e "\e[31m[$0]: Command \"\e[32m$@\e[31m\" has failed but ignored by user.\e[0m";;
-    3) echo -e "\e[33m[$0]: Command \"\e[32m$@\e[33m\" has been skipped by user.\e[0m";;
   esac
+}
+function showfun() {
+  echo -e "\e[34m[$0]: The definition of function \"$1\" is as follows:\e[0m"
+  printf "\e[32m"
+  type -a $1
+  printf "\e[97m"
 }
 
 ################################## Usage example ##################################
